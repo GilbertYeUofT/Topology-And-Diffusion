@@ -1,19 +1,36 @@
 //Code from https://github.com/KISLAYA-SRI/THE-METRO-APP/blob/master/Graph_M.java
 
 import java.util.*;
-import java.io.*;
-
 
 public class Graph_M {
 
-    static HashMap<String, Vertex> vertices;
+    private HashMap<String, Vertex> vertices;
 
     public Graph_M() {
-        vertices = new HashMap<>();
+        this.vertices = new HashMap<>();
     }
 
-    public Vertex getVertex(String name){
-        return vertices.get(name);
+    public void addVertex(String vname) {
+        Vertex vtx = new Vertex(vname);
+        this.vertices.put(vname, vtx);
+
+    }
+
+    public void removeVertex(String vname) {
+        Vertex vertex = this.vertices.get(vname);
+        ArrayList<String> keys = new ArrayList<>(vertex.getKeySet());
+
+        for (String key : keys) {
+            Vertex neighborVertex = this.vertices.get(key);
+            neighborVertex.removeNeighbor(vname);
+            neighborVertex.updateDegree();
+        }
+
+        this.vertices.remove(vname);
+    }
+
+    public Vertex getVertex(String name) {
+        return this.vertices.get(name);
     }
 
     public int numVertex() {
@@ -24,126 +41,88 @@ public class Graph_M {
         return this.vertices.containsKey(vname);
     }
 
-    public void addVertex(String vname) {
-        Vertex vtx = new Vertex(vname);
-        vertices.put(vname, vtx);
-
-    }
-
-    public void removeVertex(String vname) {
-        Vertex vtx = vertices.get(vname);
-        ArrayList<String> keys = new ArrayList<>(vtx.neighbors.keySet());
-
-        for (String key : keys) {
-            Vertex nbrVtx = vertices.get(key);
-            nbrVtx.neighbors.remove(vname);
-            nbrVtx.updateDegree();
-        }
-
-        vertices.remove(vname);
-    }
-
-    public static HashMap<String, Vertex> getVertices() {
-        return vertices;
+    public HashMap<String, Vertex> getVertices() {
+        return this.vertices;
     }
 
     public int numEdges() {
-        ArrayList<String> keys = new ArrayList<>(vertices.keySet());
+        ArrayList<String> keys = new ArrayList<>(this.vertices.keySet());
         int count = 0;
 
         for (String key : keys) {
-            Vertex vtx = vertices.get(key);
-            count = count + vtx.neighbors.size();
+            Vertex vertex = this.vertices.get(key);
+            count = count + vertex.getSize();
         }
 
         return count / 2;
     }
 
     public boolean containsEdge(String vname1, String vname2) {
-        Vertex vtx1 = vertices.get(vname1);
-        Vertex vtx2 = vertices.get(vname2);
+        Vertex vtx1 = this.vertices.get(vname1);
+        Vertex vtx2 = this.vertices.get(vname2);
 
-        if (vtx1 == null || vtx2 == null || !vtx1.neighbors.containsKey(vname2)) {
-            return false;
-        }
-
-        return true;
+        return vtx1 != null && vtx2 != null && vtx1.hasNeighbor(vname2);
     }
 
     public void addEdge(String vname1, String vname2, int value) {
-        Vertex vtx1 = vertices.get(vname1);
-        Vertex vtx2 = vertices.get(vname2);
+        Vertex vtx1 = this.vertices.get(vname1);
+        Vertex vtx2 = this.vertices.get(vname2);
 
-        if (vtx1 == null || vtx2 == null || vtx1.neighbors.containsKey(vname2)) {
+        if (vtx1 == null || vtx2 == null || vtx1.hasNeighbor(vname2)) {
             return;
         }
 
-        vtx1.neighbors.put(vname2, value);
+        vtx1.addNeighbor(vname2, value);
         vtx1.updateDegree();
-        vtx2.neighbors.put(vname1, value);
+        vtx2.addNeighbor(vname1, value);
         vtx2.updateDegree();
     }
 
     public void removeEdge(String vname1, String vname2) {
-        Vertex vtx1 = vertices.get(vname1);
-        Vertex vtx2 = vertices.get(vname2);
+        Vertex vtx1 = this.vertices.get(vname1);
+        Vertex vtx2 = this.vertices.get(vname2);
 
         //check if the vertices given or the edge between these vertices exist or not
-        if (vtx1 == null || vtx2 == null || !vtx1.neighbors.containsKey(vname2)) {
+        if (vtx1 == null || vtx2 == null || !vtx1.hasNeighbor(vname2)) {
             return;
         }
 
-        vtx1.neighbors.remove(vname2);
+        vtx1.removeNeighbor(vname2);
         vtx1.updateDegree();
-        vtx2.neighbors.remove(vname1);
+        vtx2.removeNeighbor(vname1);
         vtx2.updateDegree();
     }
 
-    public void updateEdge(String vname1, String vname2){
-        Vertex vtx1 = vertices.get(vname1);
-        Vertex vtx2 = vertices.get(vname2);
+    public void updateEdge(String vname1, String vname2) {
+        Vertex vtx1 = this.vertices.get(vname1);
+        Vertex vtx2 = this.vertices.get(vname2);
 
         if (vtx1 == null || vtx2 == null) {
             return;
         }
 
-        if(vtx1.neighbors.containsKey(vtx2) && vtx2.neighbors.containsKey(vtx1)){
-            vtx1.neighbors.put(vname2, vtx1.neighbors.get(vtx2) + 1);
-            vtx2.neighbors.put(vname1, vtx2.neighbors.get(vtx1) + 1);
-        }
+        vtx1.updateNeighbor(vname2);
+        vtx2.updateNeighbor(vname1);
     }
 
     public void display_Map() {
-        System.out.println("\t Delhi Metro Map");
-        System.out.println("\t------------------");
         System.out.println("----------------------------------------------------\n");
-        ArrayList<String> keys = new ArrayList<>(vertices.keySet());
+        ArrayList<String> keys = new ArrayList<>(this.vertices.keySet());
 
         for (String key : keys) {
-            String str = key + " =>\n";
-            Vertex vtx = vertices.get(key);
-            ArrayList<String> vtxnbrs = new ArrayList<>(vtx.neighbors.keySet());
+            String str = key + " -- degree: " + this.vertices.get(key).getDegree() + " =>\n";
+            Vertex vtx = this.vertices.get(key);
+            ArrayList<String> vtxnbrs = new ArrayList<>(vtx.getKeySet());
 
             for (String nbr : vtxnbrs) {
                 str = str + "\t" + nbr + "\t";
-                str = str + vtx.neighbors.get(nbr) + "\n";
+                str = str + vtx.getNeighbor(nbr) + "\n";
             }
             System.out.println(str);
         }
         System.out.println("\t------------------");
         System.out.println("---------------------------------------------------\n");
 
-    }
-
-    public void display_Stations() {
-        System.out.println("\n***********************************************************************\n");
-        ArrayList<String> keys = new ArrayList<>(vertices.keySet());
-        int i = 1;
-        for (String key : keys) {
-            System.out.println(i + ". " + key);
-            i++;
-        }
-        System.out.println("\n***********************************************************************\n");
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,8 +136,8 @@ public class Graph_M {
         //MARK AS DONE
         processed.put(vname1, true);
 
-        Vertex vtx = vertices.get(vname1);
-        ArrayList<String> nbrs = new ArrayList<>(vtx.neighbors.keySet());
+        Vertex vtx = this.vertices.get(vname1);
+        ArrayList<String> nbrs = new ArrayList<>(vtx.getKeySet());
 
         //TRAVERSE THE NBRS OF THE VERTEX
         for (String nbr : nbrs) {
@@ -185,7 +164,7 @@ public class Graph_M {
 			*/
 
         /*
-        Removing the overriden method gives us this errror:
+        Removing the overridden method gives us this error:
         The type Graph_M.DijkstraPair must implement the inherited abstract method Comparable<Graph_M.DijkstraPair>.compareTo(Graph_M.DijkstraPair)
         This is because DijkstraPair is not an abstract class and implements Comparable interface which has an abstract
         method compareTo. In order to make our class concrete(a class which provides implementation for all its methods)
@@ -204,7 +183,7 @@ public class Graph_M {
 
         Heap<DijkstraPair> heap = new Heap<>();
 
-        for (String key : vertices.keySet()) {
+        for (String key : this.vertices.keySet()) {
             DijkstraPair np = new DijkstraPair();
             np.vname = key;
             //np.psf = "";
@@ -232,16 +211,16 @@ public class Graph_M {
 
             ans.add(rp.vname);
 
-            Vertex v = vertices.get(rp.vname);
-            for (String nbr : v.neighbors.keySet()) {
+            Vertex v = this.vertices.get(rp.vname);
+            for (String nbr : v.getKeySet()) {
                 if (map.containsKey(nbr)) {
                     int oc = map.get(nbr).cost;
-                    Vertex k = vertices.get(rp.vname);
+                    Vertex k = this.vertices.get(rp.vname);
                     int nc;
                     if (nan)
-                        nc = rp.cost + 120 + 40 * k.neighbors.get(nbr);
+                        nc = rp.cost + 120 + 40 * k.getNeighbor(nbr);
                     else
-                        nc = rp.cost + k.neighbors.get(nbr);
+                        nc = rp.cost + k.getNeighbor(nbr);
 
                     if (nc < oc) {
                         DijkstraPair gp = map.get(nbr);
@@ -302,8 +281,8 @@ public class Graph_M {
                 continue;
             }
 
-            Vertex rpvtx = vertices.get(rp.vname);
-            ArrayList<String> nbrs = new ArrayList<>(rpvtx.neighbors.keySet());
+            Vertex rpvtx = this.vertices.get(rp.vname);
+            ArrayList<String> nbrs = new ArrayList<>(rpvtx.getKeySet());
 
             for (String nbr : nbrs) {
                 // process only unprocessed nbrs
@@ -313,13 +292,13 @@ public class Graph_M {
                     Pair np = new Pair();
                     np.vname = nbr;
                     np.psf = rp.psf + nbr + "  ";
-                    np.min_dis = rp.min_dis + rpvtx.neighbors.get(nbr);
+                    np.min_dis = rp.min_dis + rpvtx.getNeighbor(nbr);
                     //np.min_time = rp.min_time + 120 + 40*rpvtx.nbrs.get(nbr);
                     stack.addFirst(np);
                 }
             }
         }
-        ans = ans + Integer.toString(min);
+        ans = ans + min;
         return ans;
     }
 
@@ -363,8 +342,8 @@ public class Graph_M {
                 continue;
             }
 
-            Vertex rpvtx = vertices.get(rp.vname);
-            ArrayList<String> nbrs = new ArrayList<>(rpvtx.neighbors.keySet());
+            Vertex rpvtx = this.vertices.get(rp.vname);
+            ArrayList<String> nbrs = new ArrayList<>(rpvtx.getKeySet());
 
             for (String nbr : nbrs) {
                 // process only unprocessed nbrs
@@ -375,19 +354,19 @@ public class Graph_M {
                     np.vname = nbr;
                     np.psf = rp.psf + nbr + "  ";
                     //np.min_dis = rp.min_dis + rpvtx.nbrs.get(nbr);
-                    np.min_time = rp.min_time + 120 + 40 * rpvtx.neighbors.get(nbr);
+                    np.min_time = rp.min_time + 120 + 40 * rpvtx.getNeighbor(nbr);
                     stack.addFirst(np);
                 }
             }
         }
-        Double minutes = Math.ceil((double) min / 60);
-        ans = ans + Double.toString(minutes);
+        double minutes = Math.ceil((double) min / 60);
+        ans = ans + minutes;
         return ans;
     }
 
     public ArrayList<String> get_Interchanges(String str) {
         ArrayList<String> arr = new ArrayList<>();
-        String res[] = str.split("  ");
+        String[] res = str.split("  ");
         arr.add(res[0]);
         int count = 0;
         for (int i = 1; i < res.length - 1; i++) {
@@ -412,241 +391,5 @@ public class Graph_M {
         arr.add(Integer.toString(count));
         arr.add(res[res.length - 1]);
         return arr;
-    }
-
-    public static void Create_Metro_Map(Graph_M g) {
-
-        g.addVertex("Noida Sector 62~B");
-        g.addVertex("Botanical Garden~B");
-        g.addVertex("Yamuna Bank~B");
-        g.addVertex("Rajiv Chowk~BY");
-        g.addVertex("Vaishali~B");
-        g.addVertex("Moti Nagar~B");
-        g.addVertex("Janak Puri West~BO");
-        g.addVertex("Dwarka Sector 21~B");
-        g.addVertex("Huda City Center~Y");
-        g.addVertex("Saket~Y");
-        g.addVertex("Vishwavidyalaya~Y");
-        g.addVertex("Chandni Chowk~Y");
-        g.addVertex("New Delhi~YO");
-        g.addVertex("AIIMS~Y");
-        g.addVertex("Shivaji Stadium~O");
-        g.addVertex("DDS Campus~O");
-        g.addVertex("IGI Airport~O");
-        g.addVertex("Rajouri Garden~BP");
-        g.addVertex("Netaji Subhash Place~PR");
-        g.addVertex("Punjabi Bagh West~P");
-
-        g.addEdge("Noida Sector 62~B", "Botanical Garden~B", 8);
-        g.addEdge("Botanical Garden~B", "Yamuna Bank~B", 10);
-        g.addEdge("Yamuna Bank~B", "Vaishali~B", 8);
-        g.addEdge("Yamuna Bank~B", "Rajiv Chowk~BY", 6);
-        g.addEdge("Rajiv Chowk~BY", "Moti Nagar~B", 9);
-        g.addEdge("Moti Nagar~B", "Janak Puri West~BO", 7);
-        g.addEdge("Janak Puri West~BO", "Dwarka Sector 21~B", 6);
-        g.addEdge("Huda City Center~Y", "Saket~Y", 15);
-        g.addEdge("Saket~Y", "AIIMS~Y", 6);
-        g.addEdge("AIIMS~Y", "Rajiv Chowk~BY", 7);
-        g.addEdge("Rajiv Chowk~BY", "New Delhi~YO", 1);
-        g.addEdge("New Delhi~YO", "Chandni Chowk~Y", 2);
-        g.addEdge("Chandni Chowk~Y", "Vishwavidyalaya~Y", 5);
-        g.addEdge("New Delhi~YO", "Shivaji Stadium~O", 2);
-        g.addEdge("Shivaji Stadium~O", "DDS Campus~O", 7);
-        g.addEdge("DDS Campus~O", "IGI Airport~O", 8);
-        g.addEdge("Moti Nagar~B", "Rajouri Garden~BP", 2);
-        g.addEdge("Punjabi Bagh West~P", "Rajouri Garden~BP", 2);
-        g.addEdge("Punjabi Bagh West~P", "Netaji Subhash Place~PR", 3);
-    }
-
-    public static String[] printCodelist() {
-        System.out.println("List of station along with their codes:\n");
-        ArrayList<String> keys = new ArrayList<>(vertices.keySet());
-        int i = 1, j = 0, m = 1;
-        StringTokenizer stname;
-        String temp = "";
-        String codes[] = new String[keys.size()];
-        char c;
-        for (String key : keys) {
-            stname = new StringTokenizer(key);
-            codes[i - 1] = "";
-            j = 0;
-            while (stname.hasMoreTokens()) {
-                temp = stname.nextToken();
-                c = temp.charAt(0);
-                while (c > 47 && c < 58) {
-                    codes[i - 1] += c;
-                    j++;
-                    c = temp.charAt(j);
-                }
-                if ((c < 48 || c > 57) && c < 123)
-                    codes[i - 1] += c;
-            }
-            if (codes[i - 1].length() < 2)
-                codes[i - 1] += Character.toUpperCase(temp.charAt(1));
-
-            System.out.print(i + ". " + key + "\t");
-            if (key.length() < (22 - m))
-                System.out.print("\t");
-            if (key.length() < (14 - m))
-                System.out.print("\t");
-            if (key.length() < (6 - m))
-                System.out.print("\t");
-            System.out.println(codes[i - 1]);
-            i++;
-            if (i == (int) Math.pow(10, m))
-                m++;
-        }
-        return codes;
-    }
-
-    public static void main(String[] args) throws IOException {
-        Graph_M g = new Graph_M();
-        Create_Metro_Map(g);
-
-        System.out.println("\n\t\t\t****WELCOME TO THE METRO APP*****");
-
-        BufferedReader inp = new BufferedReader(new InputStreamReader(System.in));
-        // int choice = Integer.parseInt(inp.readLine());
-        //STARTING SWITCH CASE
-        while (true) {
-            System.out.println("\t\t\t\t~~LIST OF ACTIONS~~\n\n");
-            System.out.println("1. LIST ALL THE STATIONS IN THE MAP");
-            System.out.println("2. SHOW THE METRO MAP");
-            System.out.println("3. GET SHORTEST DISTANCE FROM A 'SOURCE' STATION TO 'DESTINATION' STATION");
-            System.out.println("4. GET SHORTEST TIME TO REACH FROM A 'SOURCE' STATION TO 'DESTINATION' STATION");
-            System.out.println("5. GET SHORTEST PATH (DISTANCE WISE) TO REACH FROM A 'SOURCE' STATION TO 'DESTINATION' STATION");
-            System.out.println("6. GET SHORTEST PATH (TIME WISE) TO REACH FROM A 'SOURCE' STATION TO 'DESTINATION' STATION");
-            System.out.println("7. EXIT THE MENU");
-            System.out.print("\nENTER YOUR CHOICE FROM THE ABOVE LIST (1 to 7) : ");
-            int choice = -1;
-            try {
-                choice = Integer.parseInt(inp.readLine());
-            } catch (Exception e) {
-                // default will handle
-            }
-            System.out.print("\n***********************************************************\n");
-            if (choice == 7) {
-                System.exit(0);
-            }
-            switch (choice) {
-                case 1:
-                    g.display_Stations();
-                    break;
-
-                case 2:
-                    g.display_Map();
-                    break;
-
-                case 3:
-                    ArrayList<String> keys = new ArrayList<>(vertices.keySet());
-                    String codes[] = printCodelist();
-                    System.out.println("\n1. TO ENTER SERIAL NO. OF STATIONS\n2. TO ENTER CODE OF STATIONS\n3. TO ENTER NAME OF STATIONS\n");
-                    System.out.println("ENTER YOUR CHOICE:");
-                    int ch = Integer.parseInt(inp.readLine());
-                    int j;
-
-                    String st1 = "", st2 = "";
-                    System.out.println("ENTER THE SOURCE AND DESTINATION STATIONS");
-                    if (ch == 1) {
-                        st1 = keys.get(Integer.parseInt(inp.readLine()) - 1);
-                        st2 = keys.get(Integer.parseInt(inp.readLine()) - 1);
-                    } else if (ch == 2) {
-                        String a, b;
-                        a = (inp.readLine()).toUpperCase();
-                        for (j = 0; j < keys.size(); j++)
-                            if (a.equals(codes[j]))
-                                break;
-                        st1 = keys.get(j);
-                        b = (inp.readLine()).toUpperCase();
-                        for (j = 0; j < keys.size(); j++)
-                            if (b.equals(codes[j]))
-                                break;
-                        st2 = keys.get(j);
-                    } else if (ch == 3) {
-                        st1 = inp.readLine();
-                        st2 = inp.readLine();
-                    } else {
-                        System.out.println("Invalid choice");
-                        System.exit(0);
-                    }
-
-                    HashMap<String, Boolean> processed = new HashMap<>();
-                    if (!g.containsVertex(st1) || !g.containsVertex(st2) || !g.hasPath(st1, st2, processed))
-                        System.out.println("THE INPUTS ARE INVALID");
-                    else
-                        System.out.println("SHORTEST DISTANCE FROM " + st1 + " TO " + st2 + " IS " + g.dijkstra(st1, st2, false) + "KM\n");
-                    break;
-
-                case 4:
-                    System.out.print("ENTER THE SOURCE STATION: ");
-                    String sat1 = inp.readLine();
-                    System.out.print("ENTER THE DESTINATION STATION: ");
-                    String sat2 = inp.readLine();
-
-                    HashMap<String, Boolean> processed1 = new HashMap<>();
-                    System.out.println("SHORTEST TIME FROM (" + sat1 + ") TO (" + sat2 + ") IS " + g.dijkstra(sat1, sat2, true) / 60 + " MINUTES\n\n");
-                    break;
-
-                case 5:
-                    System.out.println("ENTER THE SOURCE AND DESTINATION STATIONS");
-                    String s1 = inp.readLine();
-                    String s2 = inp.readLine();
-
-                    HashMap<String, Boolean> processed2 = new HashMap<>();
-                    if (!g.containsVertex(s1) || !g.containsVertex(s2) || !g.hasPath(s1, s2, processed2))
-                        System.out.println("THE INPUTS ARE INVALID");
-                    else {
-                        ArrayList<String> str = g.get_Interchanges(g.Get_Minimum_Distance(s1, s2));
-                        int len = str.size();
-                        System.out.println("SOURCE STATION : " + s1);
-                        System.out.println("SOURCE STATION : " + s2);
-                        System.out.println("DISTANCE : " + str.get(len - 1));
-                        System.out.println("NUMBER OF INTERCHANGES : " + str.get(len - 2));
-                        //System.out.println(str);
-                        System.out.println("~~~~~~~~~~~~~");
-                        System.out.println("START  ==>  " + str.get(0));
-                        for (int i = 1; i < len - 3; i++) {
-                            System.out.println(str.get(i));
-                        }
-                        System.out.print(str.get(len - 3) + "   ==>    END");
-                        System.out.println("\n~~~~~~~~~~~~~");
-                    }
-                    break;
-
-                case 6:
-                    System.out.print("ENTER THE SOURCE STATION: ");
-                    String ss1 = inp.readLine();
-                    System.out.print("ENTER THE DESTINATION STATION: ");
-                    String ss2 = inp.readLine();
-
-                    HashMap<String, Boolean> processed3 = new HashMap<>();
-                    if (!g.containsVertex(ss1) || !g.containsVertex(ss2) || !g.hasPath(ss1, ss2, processed3))
-                        System.out.println("THE INPUTS ARE INVALID");
-                    else {
-                        ArrayList<String> str = g.get_Interchanges(g.Get_Minimum_Time(ss1, ss2));
-                        int len = str.size();
-                        System.out.println("SOURCE STATION : " + ss1);
-                        System.out.println("DESTINATION STATION : " + ss2);
-                        System.out.println("TIME : " + str.get(len - 1) + " MINUTES");
-                        System.out.println("NUMBER OF INTERCHANGES : " + str.get(len - 2));
-                        //System.out.println(str);
-                        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-                        System.out.print("START  ==>  " + str.get(0) + " ==>  ");
-                        for (int i = 1; i < len - 3; i++) {
-                            System.out.println(str.get(i));
-                        }
-                        System.out.print(str.get(len - 3) + "   ==>    END");
-                        System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-                    }
-                    break;
-                default:  //If switch expression does not match with any case,
-                    //default statements are executed by the program.
-                    //No break is needed in the default case
-                    System.out.println("Please enter a valid option! ");
-                    System.out.println("The options you can choose are from 1 to 6. ");
-
-            }
-        }
-
     }
 }

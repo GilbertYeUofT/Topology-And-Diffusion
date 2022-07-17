@@ -1,7 +1,4 @@
-import org.graphstream.graph.Graph;
-
 import java.util.*;
-
 public class DiffusionSimulator {
 
 
@@ -14,7 +11,7 @@ public class DiffusionSimulator {
         seed = sc.nextInt();
         System.out.print("Give the number of random steps: ");
         n = sc.nextInt();
-        System.out.print("Give the number runs: ");
+        System.out.print("Give the number of starting random walkers: ");
         runs = sc.nextInt();
         System.out.print("Give the number of starting vertices for graph: ");
         vertices = sc.nextInt();
@@ -27,9 +24,9 @@ public class DiffusionSimulator {
 
         Random rand = new Random(seed);
         Graph_M g = generateGraph(vertices, rand, 0.5);
-        g.display_Map();
-        ArrayList<RandomWalker> rws = new ArrayList<RandomWalker>();
+        ArrayList<RandomWalker> rws = new ArrayList<>();
 
+        //add the random walker's starting point randomly
         Set<String> ks = g.getVertices().keySet();
         String[] keys = ks.toArray(new String[ks.size()]);
 
@@ -41,13 +38,59 @@ public class DiffusionSimulator {
 
 
         // do random walk n times
-
-        for (int i = 0; i < runs; i++) {
-            for (int j = 0; j < n; j++) {
-                rws.get(i).run(rand);
-
+        int step = 0;
+        while (step < n) {
+            for (int j = 0; j < runs; j++) {
+                rws.get(j).run(rand);
             }
+            //add random walkers as simulation goes on by placing them on hotspots
+            if (step % 2 == 0) {
+                HashMap<String, Double> probabilities = createProb(g);
+                double choice = rand.nextDouble();
+                String vertex = chooseRange(choice, probabilities);
+                rws.add(new RandomWalker(g.getVertex(vertex), g));
+                n++;
+            }
+            step++;
         }
+
+        g.display_Map();
+    }
+
+    //Choose the range in hashmap given probability
+    private static String chooseRange(double choice, HashMap<String, Double> probabilities) {
+        String lastVertex = null;
+        for (String vertex: probabilities.keySet()) {
+            if(lastVertex != null && choice > probabilities.get(lastVertex) &&
+                    choice < probabilities.get(vertex)){
+                return vertex;
+            }
+            lastVertex = vertex;
+        }
+        return lastVertex;
+    }
+
+    //Create a probability range
+    private static HashMap<String, Double> createProb(Graph_M g) {
+        HashMap<String, Integer> frequencies = new HashMap<>();
+        int sum = 0;
+        for (String vertex : g.getVertices().keySet()) {
+            int vertexFrequency = g.getVertex(vertex).sumVisits();
+            frequencies.put(vertex, g.getVertex(vertex).sumVisits());
+            sum += vertexFrequency;
+        }
+        HashMap<String, Double> prob = new HashMap<>();
+        for (String vertex : frequencies.keySet()) {
+            prob.put(vertex, frequencies.get(vertex) / (double)sum);
+        }
+
+        double curRange = 0.0;
+        for (String vertex : prob.keySet()) {
+            double probVertex = prob.get(vertex);
+            curRange = probVertex + curRange;
+            prob.put(vertex, curRange);
+        }
+        return prob;
     }
 
     /**
@@ -58,22 +101,27 @@ public class DiffusionSimulator {
     private static Graph_M generateGraph(int num, Random rand, double probability) {
         Graph_M graph = new Graph_M();
 
-        Integer start = 0;
-        Integer end = 1;
-        graph.addVertex(start.toString());
-        graph.addVertex(end.toString());
-        graph.addEdge(start.toString(), end.toString(), 1);
+        //add two vertices and connect them
+        int start = 0;
+        int end = 1;
+        graph.addVertex(Integer.toString(start));
+        graph.addVertex(Integer.toString(end));
+        graph.addEdge(Integer.toString(start), Integer.toString(end), 1);
+
+
+        //add until there are num number of vertices
         int i = 2;
-        while(i < num) {
+        while (i < num) {
             Set<String> ks = graph.getVertices().keySet();
             String[] keys = ks.toArray(new String[ks.size()]);
             int max = graph.numVertex();
             int vertex = rand.nextInt(max);
 
+            //stochastically grow the graph
             if (rand.nextDouble() < probability) {
-                Integer index = i;
-                graph.addVertex(index.toString());
-                graph.addEdge(index.toString(), keys[vertex], 1);
+                int index = i;
+                graph.addVertex(Integer.toString(index));
+                graph.addEdge(Integer.toString(index), keys[vertex], 1);
                 i++;
             } else {
                 startRW(graph, keys[vertex], rand);
@@ -82,18 +130,26 @@ public class DiffusionSimulator {
         return graph;
     }
 
+    /**
+     * Helper method to start a random walk when growing the graph.
+     *
+     * @param graph graph to grow
+     * @param key   key of starting vertex
+     * @param rand  random generator
+     */
     private static void startRW(Graph_M graph, String key, Random rand) {
         RandomWalker rw = new RandomWalker(graph.getVertex(key), graph);
         rw.generateRun(rand);
-        while((!rw.getCurVertex().getName().equals(key)) && (rw.getCurVertex().getDegree() != 1)){
+        while ((!rw.getCurVertex().getName().equals(key)) && (rw.getCurVertex().getDegree() != 1)) {
             rw.generateRun(rand);
-            System.out.println(rw.getCurVertex().getName());
         }
         String curVert = rw.getCurVertex().getName();
-        if(curVert != key && !graph.containsEdge(key, curVert)){
+        if (!Objects.equals(curVert, key) && !graph.containsEdge(key, curVert)) {
             graph.addEdge(key, curVert, 1);
         }
     }
+
+
 
 //    /**
 //     * Given integer runs, return the radius of the circle of random walkers
