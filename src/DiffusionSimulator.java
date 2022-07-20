@@ -9,13 +9,9 @@ public class DiffusionSimulator {
         Scanner sc = new Scanner(System.in);
         System.out.print("Give the seed for random sequence: ");
         seed = sc.nextInt();
-        System.out.print("Give the number of random steps: ");
-        n = sc.nextInt();
-        System.out.print("Give the number of starting random walkers: ");
-        runs = sc.nextInt();
         System.out.print("Give the number of starting vertices for graph: ");
         vertices = sc.nextInt();
-        sc.close();
+
 
 
         //Create the random walkers
@@ -26,6 +22,14 @@ public class DiffusionSimulator {
         Graph_M g = generateGraph(vertices, rand, 0.5);
         ArrayList<RandomWalker> rws = new ArrayList<>();
 
+
+        System.out.println("--Graph generated--");
+        System.out.print("Give the number of random steps for starting random walkers: ");
+        n = sc.nextInt();
+        System.out.print("Give the number of starting random walkers: ");
+        runs = sc.nextInt();
+
+
         //add the random walker's starting point randomly
         Set<String> ks = g.getVertices().keySet();
         String[] keys = ks.toArray(new String[ks.size()]);
@@ -35,26 +39,87 @@ public class DiffusionSimulator {
             int vertex = rand.nextInt(max);
             rws.add(new RandomWalker(g.getVertex(keys[vertex]), g));
         }
+        for (int i = 0; i < n; i++){
+            for (RandomWalker rw : rws) {
+                rw.run(rand);
+            }
+        }
+        System.out.println("-------Displaying current graph-------");
+        g.display_Map();
 
 
-        // do random walk n times
-        int step = 0;
-        while (step < n) {
-            for (int j = 0; j < runs; j++) {
-                rws.get(j).run(rand);
-            }
-            //add random walkers as simulation goes on by placing them on hotspots
-            if (step % 2 == 0) {
-                HashMap<String, Double> probabilities = createProb(g);
-                double choice = rand.nextDouble();
-                String vertex = chooseRange(choice, probabilities);
-                rws.add(new RandomWalker(g.getVertex(vertex), g));
-                n++;
-            }
-            step++;
+
+        System.out.println("Starting Random Walkers finished running");
+        System.out.print("Give the number of random walkers to diffuse from one point: ");
+        int diffuse = sc.nextInt();
+        sc.close();
+        ArrayList<RandomWalker> diffusion = new ArrayList<>();
+        String biggest = findBiggest(g);
+        for (int i = 0; i < diffuse; i++){
+            diffusion.add(new RandomWalker(g.getVertex(biggest), g));
         }
 
+        for (RandomWalker rw : diffusion) {
+            rw.run(rand);
+        }
+
+//        // run the random walkers
+//        int step = 0;
+//        while (step < n) {
+//            for (int j = 0; j < runs; j++) {
+//                rws.get(j).run(rand);
+//            }
+//            //add random walkers as simulation goes on by placing them on hotspots
+//            if (step % 2 == 0) {
+//                HashMap<String, Double> probabilities = createProb(g);
+//                double choice = rand.nextDouble();
+//                String vertex = chooseRange(choice, probabilities);
+//                rws.add(new RandomWalker(g.getVertex(vertex), g));
+//                runs++;
+//                n++;
+//            }
+//            step++;
+//        }
+
         g.display_Map();
+    }
+
+    private static String findBiggest(Graph_M g) {
+        HashMap<String, Integer> frequencies = new HashMap<>();
+        for (String vertex : g.getVertices().keySet()) {
+            int vertexFrequency = g.getVertex(vertex).sumVisits();
+            frequencies.put(vertex, vertexFrequency);
+        }
+        HashMap<String, Integer> sorted = sortByValue(frequencies);
+        ArrayList<String> order = new ArrayList<>();
+        for (Map.Entry<String, Integer> vertex : sorted.entrySet()){
+            order.add(vertex.getKey());
+        }
+        return order.get(order.size() - 1);
+    }
+
+
+    public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm)
+    {
+        // Create a list from elements of HashMap
+        List<Map.Entry<String, Integer> > list =
+                new LinkedList<Map.Entry<String, Integer> >(hm.entrySet());
+
+        // Sort the list
+        Collections.sort(list, new Comparator<Map.Entry<String, Integer> >() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2)
+            {
+                return (o1.getValue()).compareTo(o2.getValue());
+            }
+        });
+
+        // put data from sorted list to hashmap
+        HashMap<String, Integer> temp = new LinkedHashMap<String, Integer>();
+        for (Map.Entry<String, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
     }
 
     //Choose the range in hashmap given probability

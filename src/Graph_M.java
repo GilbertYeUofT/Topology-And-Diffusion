@@ -120,7 +120,6 @@ public class Graph_M {
             }
             System.out.println(str);
         }
-        System.out.println("\t------------------");
         System.out.println("---------------------------------------------------\n");
 
     }
